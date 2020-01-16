@@ -166,11 +166,12 @@ function parseRender (path, fileContent, result) {
       let element = jsxPath.node.openingElement
       // find sub component
       if (element.name && element.name.name && /^[A-Z]/.test(element.name.name)) {
-        result.components.push(element.name.name)
-        let name = transformComponentName(element.name.name)
-        element.name.name = name
+        const newName = element.name.name === 'Fragment' ?'div':element.name.name;
+        result.components.push(newName);
+        let name = transformComponentName(newName);
+        element.name.name = name;
         if (jsxPath.node.closingElement) {
-          jsxPath.node.closingElement.name.name = name
+          jsxPath.node.closingElement.name.name = name;
         }
       }
     },

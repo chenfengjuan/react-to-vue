@@ -23,10 +23,18 @@ module.exports = function (className, category, node, root) {
       if (property.value.property && (value === 'isRequired' || VALIDTYPES[value])) {
         // case: propTypes.string.isRequired
         if (value === 'isRequired') {
-          result[property.key.name] = {
-            type: VALIDTYPES[property.value.object.property.name],
-            required: true
+          if(VALIDTYPES[property.value.object.property.name]) {
+            result[property.key.name] = {
+              type: VALIDTYPES[property.value.object.property.name],
+              required: true
+            }
+          } else {
+            result[property.key.name] = {
+              validator:()=>true,
+              required: true
+            }
           }
+          
         } else {
           result[property.key.name] = {
             type: VALIDTYPES[value]

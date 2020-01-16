@@ -6,6 +6,7 @@ var saveComponent = require('./save')
 var generateVueComponent = require('./generate')
 var getFunctional = require('./functional')
 var babelTraverse = require('babel-traverse').default
+var babelTypes =require('babel-types');
 var babylon = require('babylon')
 var chalk = require('chalk')
 var transformTS = require('./ts')
@@ -38,6 +39,22 @@ module.exports = function transform (src, options) {
           delete item.trailingComments
         }
       })
+    },
+    // ArrowFunctionExpression(path) {
+    //   let parent = path.parent;
+    //   if(parent.type==='ClassProperty'&&parent.value.type==='ArrowFunctionExpression') {
+    //     let params = path.node.params
+    //     let blockStatement = path.node.body
+    //     let func = babelTypes.functionExpression(null, params, blockStatement, false, false)
+    //     path.replaceWith(func)
+    //   }
+    // },
+    ClassProperty(path){
+      let node = path.node;
+      if(node.type==='ClassProperty'&&node.value.type==='ArrowFunctionExpression'){
+        const method = babelTypes.classMethod('method', node.key, node.value.params,node.value.body)
+        path.replaceWith(method)
+      }
     }
   })
   // traverse module
