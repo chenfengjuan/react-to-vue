@@ -1,13 +1,15 @@
-var fs = require('fs')
-var path = require('path')
+'use strict';
+
+var fs = require('fs');
+var path = require('path');
 
 module.exports = function (dst, output) {
   if (dst) {
     if (!path.isAbsolute(dst)) {
-      dst = path.resolve(process.cwd(), dst)
+      dst = path.resolve(process.cwd(), dst);
     }
-    fs.writeFileSync(dst, output)
+    fs.writeFileSync(dst, output);
   } else {
-    console.log(output)
+    console.log(output);
   }
-}
+};

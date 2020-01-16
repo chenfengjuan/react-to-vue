@@ -1,81 +1,94 @@
-const chalk = require('chalk')
-const babelTraverse = require('babel-traverse').default
-const babylon = require('babylon')
-const generate = require('babel-generator').default
+'use strict';
 
-export function reportIssue (msg) {
-  msg && console.log(msg)
-  console.log(chalk.red('Please report issue here:') + chalk.underline.red('https://github.com/vicwang163/react-to-vue/issues'))
-  process.exit()
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.reportIssue = reportIssue;
+exports.transformSourceString = transformSourceString;
+exports.transformComponentName = transformComponentName;
+exports.getFunctionBody = getFunctionBody;
+exports.removeBadCode = removeBadCode;
+exports.isVariableFunc = isVariableFunc;
+const chalk = require('chalk');
+const babelTraverse = require('babel-traverse').default;
+const babylon = require('babylon');
+const generate = require('babel-generator').default;
+
+function reportIssue(msg) {
+  msg && console.log(msg);
+  console.log(chalk.red('Please report issue here:') + chalk.underline.red('https://github.com/vicwang163/react-to-vue/issues'));
+  process.exit();
 }
 
 /*
 * transform source string to ast nodes
 */
-export function transformSourceString (statement) {
+function transformSourceString(statement) {
   if (!Array.isArray(statement)) {
-    statement = [statement]
+    statement = [statement];
   }
-  let result = []
+  let result = [];
   for (let i = 0; i < statement.length; i++) {
-    let replacement = statement[i]
-    replacement = babylon.parse(replacement)
-    replacement = replacement.program.body[0]
-    result.push(babelTraverse.removeProperties(replacement))
+    let replacement = statement[i];
+    replacement = babylon.parse(replacement);
+    replacement = replacement.program.body[0];
+    result.push(babelTraverse.removeProperties(replacement));
   }
-  return result
+  return result;
 }
 
 /*
 * transform component name
 */
-export function transformComponentName (name) {
+function transformComponentName(name) {
   if (/[A-Z]{2,}/.test(name)) {
-    return name
+    return name;
   }
-  return name.replace(/^[A-Z]/, v => v.toLowerCase()).replace(/[A-Z]/g, v => '-' + v.toLowerCase())
+  return name.replace(/^[A-Z]/, v => v.toLowerCase()).replace(/[A-Z]/g, v => '-' + v.toLowerCase());
 }
 
 /*
 * generate BlockStatement
 */
-export function getFunctionBody (node, removeBrace = true) {
-  let tempAst = babylon.parse('{console.log(1)}')
-  let executed = false
-  let rt
+function getFunctionBody(node, removeBrace = true) {
+  let tempAst = babylon.parse('{console.log(1)}');
+  let executed = false;
+  let rt;
   babelTraverse(tempAst, {
-    BlockStatement (tempPath) {
+    BlockStatement(tempPath) {
       if (executed) {
-        return
+        return;
       }
-      executed = true
-      tempPath.replaceWith(node)
+      executed = true;
+      tempPath.replaceWith(node);
     }
-  })
-  rt = generate(tempAst, {})
-  rt = rt.code
-  removeBrace && (rt = rt.replace(/^{|}$/g, ''))
-  return rt
+  });
+  rt = generate(tempAst, {});
+  rt = rt.code;
+  removeBrace && (rt = rt.replace(/^{|}$/g, ''));
+  return rt;
 }
 
 /*
 * remove bad code with hard code for now
 */
-export function removeBadCode (con) {
-  return con.replace(/\.\.\.(\w+),\n/, function (a, v) {return '...' + v + '\n'})
+function removeBadCode(con) {
+  return con.replace(/\.\.\.(\w+),\n/, function (a, v) {
+    return '...' + v + '\n';
+  });
 }
 
 /*
 * check if the VariableDeclaration is function, like 'let a = function () {}'
 */
 
-export function isVariableFunc (path) {
-  let result = false
+function isVariableFunc(path) {
+  let result = false;
   path.traverse({
-    "ArrowFunctionExpression|FunctionDeclaration" (p) {
-      result = true
-      p.stop()
+    "ArrowFunctionExpression|FunctionDeclaration"(p) {
+      result = true;
+      p.stop();
     }
-  })
-  return result
+  });
+  return result;
 }

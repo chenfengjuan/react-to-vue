@@ -1,146 +1,150 @@
-var format = require("prettier-eslint");
-var babelTraverse = require('babel-traverse').default
-var {transformComponentName} = require('./utility')
+'use strict';
 
-function mergeExportComponent (object) {
+var format = require("prettier-eslint");
+var babelTraverse = require('babel-traverse').default;
+
+var _require = require('./utility'),
+    transformComponentName = _require.transformComponentName;
+
+function mergeExportComponent(object) {
   let com = null;
   object.functional.forEach((func, index) => {
     if (func.functional) {
-      com = func
+      com = func;
       // remove functional component
-      object.functional.splice(index, 1)
+      object.functional.splice(index, 1);
     }
-  })
+  });
   if (!com) {
-    com = object.class
+    com = object.class;
   }
-  return com
+  return com;
 }
 
-module.exports = function generateVueComponent (object) {
-  let content = ''
+module.exports = function generateVueComponent(object) {
+  let content = '';
   // add imports
-  object.import.forEach((item) => {
-    content += item + '\n'
-  })
-  
+  object.import.forEach(item => {
+    content += item + '\n';
+  });
+
   // add variable declaration
-  object.declaration.forEach((item) => {
-    content += item + '\n'
-  })
-  content += '\n\n'
-  
+  object.declaration.forEach(item => {
+    content += item + '\n';
+  });
+  content += '\n\n';
+
   // merge export component
-  let component = mergeExportComponent(object)
-  
+  let component = mergeExportComponent(object);
+
   // generate common function
-  object.functional.forEach((func) => {
+  object.functional.forEach(func => {
     // common function
-    content += func
-  })
-  
+    content += func;
+  });
+
   // generate export component
   if (component && component.render) {
     // add class static variables and methods if exists
     if (component.static) {
       for (let name in component.static) {
         if (component.static[name]) {
-          content += `let static_${name} = ${component.static[name]}\n`
+          content += `let static_${name} = ${component.static[name]}\n`;
         } else {
-          content += `let static_${name}\n`
+          content += `let static_${name}\n`;
         }
       }
     }
     // vueProps is designed to put vue properties
-    let vueProps = []
-    content += '// export component\n'
-    content += 'export default {\n'
-    
+    let vueProps = [];
+    content += '// export component\n';
+    content += 'export default {\n';
+
     // add component name
     if (component.componentName) {
-      vueProps.push(`name: '${transformComponentName(component.componentName)}'`)
+      vueProps.push(`name: '${transformComponentName(component.componentName)}'`);
     }
-    
+
     // add functional tag if it's a functional component
     if (component.functional) {
-      vueProps.push(`functional: true`)
+      vueProps.push(`functional: true`);
     }
-    
+
     // add props
     if (object.propTypes && object.propTypes[component.componentName]) {
-      let props = object.propTypes[component.componentName]
-      let defaultValues = object.defaultProps && object.defaultProps[component.componentName]
-      let propArr = []
+      let props = object.propTypes[component.componentName];
+      let defaultValues = object.defaultProps && object.defaultProps[component.componentName];
+      let propArr = [];
       for (let item in props) {
-        let value = props[item]
+        let value = props[item];
         if (defaultValues && defaultValues[item]) {
-          value.default = defaultValues[item]
+          value.default = defaultValues[item];
         }
-        let arr = []
+        let arr = [];
         for (let key in value) {
           if (key === 'type') {
-            arr.push(`${key}: ${value[key]}`)
+            arr.push(`${key}: ${value[key]}`);
           } else if (key === 'required') {
-            arr.push(`${key}: ${value[key]}`)
+            arr.push(`${key}: ${value[key]}`);
           } else {
-            arr.push(`${key}: ${ value.type === 'String' ? `'${value[key]}'` : value[key] }`)
+            arr.push(`${key}: ${value.type === 'String' ? `'${value[key]}'` : value[key]}`);
           }
         }
-        propArr.push(`${item}: {${arr.join(',\n')}}`)
+        propArr.push(`${item}: {${arr.join(',\n')}}`);
       }
-      vueProps.push(`props: {${propArr.join(',\n')}}`)
+      vueProps.push(`props: {${propArr.join(',\n')}}`);
     }
     // add data
     if (component.data && Object.keys(component.data).length) {
-      let data = component.data
-      let arr = []
+      let data = component.data;
+      let arr = [];
       for (let key in data) {
-        arr.push(`${key}: ${data[key]}`)
+        arr.push(`${key}: ${data[key]}`);
       }
-      let value = `return {${arr.join(',\n')}}`
-      vueProps.push(`data () {${value}}`)
+      let value = `return {${arr.join(',\n')}}`;
+      vueProps.push(`data () {${value}}`);
     }
-    
+
     // add methods
     if (component.methods && component.methods.length) {
-      vueProps.push(`methods: {${component.methods.join(',')}}`)
+      vueProps.push(`methods: {${component.methods.join(',')}}`);
     }
-    
+
     // add life cycles
     if (component.lifeCycles && Object.keys(component.lifeCycles).length) {
-      let lifeCycles = []
+      let lifeCycles = [];
       for (let key in component.lifeCycles) {
-        lifeCycles.push(`${key} () {${component.lifeCycles[key]}}`)
+        lifeCycles.push(`${key} () {${component.lifeCycles[key]}}`);
       }
-      vueProps.push(`${lifeCycles.join(',')}`)
+      vueProps.push(`${lifeCycles.join(',')}`);
     }
-    
+
     // add sub components
     if (component.components) {
-      let result = []
+      let result = [];
       // validate components
       component.components.forEach(function (com) {
         let exist = object.import.some(function (value) {
-          return value.includes(com)
-        })
+          return value.includes(com);
+        });
         if (exist) {
-          result.push(com)
+          result.push(com);
         }
-      })
+      });
       // if exists necessary components
       if (result.length) {
-        vueProps.push(`components: {${result.join(',')}}`)
+        vueProps.push(`components: {${result.join(',')}}`);
       }
     }
-    
+
     // add render
     if (component.render) {
-      vueProps.push(`${component.render}`)
+      vueProps.push(`${component.render}`);
     }
     // generate component
-    content += vueProps.join(',\n') + '}'
+    content += vueProps.join(',\n') + '}';
   }
-  
+
   // format content
   const options = {
     text: content,
@@ -153,11 +157,11 @@ module.exports = function generateVueComponent (object) {
         "max-len": ["error", { "code": 150 }],
         "object-curly-spacing": ["error", "never"],
         "space-before-function-paren": ["error", "always"],
-        "no-multiple-empty-lines": ["error", { "max": 0}],
+        "no-multiple-empty-lines": ["error", { "max": 0 }],
         "line-comment-position": ["error", { "position": "beside" }]
       }
     }
   };
   content = format(options);
-  return content
-}
+  return content;
+};
